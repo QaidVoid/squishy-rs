@@ -1,0 +1,16 @@
+[package]
+name = "squishy-cli"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+keywords.workspace = true
+
+[[bin]]
+name = "squishy"
+path = "src/main.rs"
+
+[dependencies]
+squishy = { path = "../squishy", version = "0.1.0" }
+clap = { version = "4.5.20", features = ["cargo", "derive"] }

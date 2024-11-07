@@ -1,0 +1,16 @@
+[package]
+name = "squishy"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+keywords.workspace = true
+
+[lib]
+name = "squishy"
+path = "src/lib.rs"
+
+[dependencies]
+backhand = "0.18.0"
+thiserror = "2.0.0"

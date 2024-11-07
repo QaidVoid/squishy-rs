@@ -17,5 +17,5 @@ pub enum SquishyError {
     SymlinkError(String),
 
     #[error("File not found: {0}")]
-    FileNotFound(PathBuf)
+    FileNotFound(PathBuf),
 }

@@ -1,8 +1,21 @@
-[package]
-name = "squishy"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "squishy-cli",
+    "squishy",
+]
+resolver = "2"
 
-[dependencies]
-backhand = "0.18.0"
-thiserror = "2.0.0"
+[workspace.package]
+version = "0.1.0"
+authors = ["Rabindra Dhakal <contact@qaidvoid.dev>"]
+license = "MIT"
+edition = "2021"
+repository = "https://github.com/pkgforge/squishy-rs"
+keywords = ["appimage", "filesystem", "squashfs", "linux"]
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
