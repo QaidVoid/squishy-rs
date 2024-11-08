@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-A Rust library and CLI tool for reading and extracting files from SquashFS filesystems, with special support for AppImage files.
+A convenient wrapper around the [backhand](https://github.com/wcampbell0x2a/backhand) library for reading and extracting files from SquashFS filesystems. Provides both a library and CLI tool.
 
 ## Features
 
