@@ -44,19 +44,20 @@ impl<'a> SquashFS<'a> {
     ///
     /// # Returns
     /// A SquashFS instance if the SquashFS data is found and valid, or an error if it is not.
-    pub fn new<R>(mut reader: BufReader<R>) -> Result<Self>
+    pub fn new<R>(mut reader: BufReader<R>, offset: Option<u64>) -> Result<Self>
     where
         R: Read + Seek + Send + 'a,
     {
-        let offset =
-            Self::find_squashfs_offset(&mut reader).map_err(|_| SquishyError::NoSquashFsFound)?;
+        let offset = offset.unwrap_or(
+            Self::find_squashfs_offset(&mut reader).map_err(|_| SquishyError::NoSquashFsFound)?,
+        );
         let reader = FilesystemReader::from_reader_with_offset(reader, offset)
             .map_err(|e| SquishyError::InvalidSquashFS(e.to_string()))?;
 
         Ok(Self { reader })
     }
 
-    /// Creates a new SquashFS instance from a file path.
+    /// Creates a new SquashFS instance from a file path. Tries to find offset automatically.
     ///
     /// # Arguments
     /// * `path` - The path to the SquashFS file.
@@ -66,7 +67,21 @@ impl<'a> SquashFS<'a> {
     pub fn from_path<P: AsRef<Path>>(path: &'a P) -> Result<Self> {
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
-        SquashFS::new(reader)
+        SquashFS::new(reader, None)
+    }
+
+    /// Creates a new SquashFS instance from a file path.
+    ///
+    /// # Arguments
+    /// * `path` - The path to the SquashFS file.
+    /// * `offset` - Seek to offset before reading
+    ///
+    /// # Returns
+    /// A SquashFS instance if the SquashFS data is found and valid, or an error if it is not.
+    pub fn from_path_with_offset<P: AsRef<Path>>(path: &'a P, offset: u64) -> Result<Self> {
+        let file = File::open(path).unwrap();
+        let reader = BufReader::new(file);
+        SquashFS::new(reader, Some(offset))
     }
 
     /// Finds the starting offset of the SquashFS data within the input file.
