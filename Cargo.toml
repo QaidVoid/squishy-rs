@@ -10,6 +10,7 @@ version = "0.1.0"
 authors = ["Rabindra Dhakal <contact@qaidvoid.dev>"]
 license = "MIT"
 edition = "2021"
+description = "A convenient high level library for reading SquashFS files"
 repository = "https://github.com/pkgforge/squishy-rs"
 keywords = ["appimage", "filesystem", "squashfs", "linux"]
 

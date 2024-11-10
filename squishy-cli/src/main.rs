@@ -10,7 +10,8 @@ fn main() {
 
     match args.command {
         cli::Commands::AppImage {
-            app,
+            offset,
+            filter,
             file,
             icon,
             desktop,
@@ -18,7 +19,13 @@ fn main() {
             write,
         } => {
             if file.exists() {
-                let appimage = AppImage::new(&app, &file).unwrap();
+                let appimage = match AppImage::new(filter.as_deref(), &file, offset) {
+                    Ok(appimage) => appimage,
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        std::process::exit(-1);
+                    }
+                };
 
                 let write_path = if let Some(write) = write {
                     if let Some(path) = write {

@@ -29,20 +29,24 @@ pub enum Commands {
         #[arg(required = true)]
         file: PathBuf,
 
-        /// Name of the app
-        #[arg(required = true, long)]
-        app: String,
+        /// Offset
+        #[arg(required = false, long, short)]
+        offset: Option<u64>,
+
+        /// Filter to apply
+        #[arg(required = false, long, short)]
+        filter: Option<String>,
 
         /// Whether to search for icon
-        #[arg(required = false, long)]
+        #[arg(required = false, long, short)]
         icon: bool,
 
         /// Whether to search for desktop file
-        #[arg(required = false, long)]
+        #[arg(required = false, long, short)]
         desktop: bool,
 
         /// Whether to search for appstream file
-        #[arg(required = false, long)]
+        #[arg(required = false, long, short)]
         appstream: bool,
 
         /// Whether to write files to disk
