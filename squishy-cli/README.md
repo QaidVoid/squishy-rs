@@ -56,6 +56,10 @@ squishy appimage path/to/app.AppImage --filter "squishy" --icon --desktop --apps
 # Provide custom offset (it'd be calculated automatically if not provided)
 # Appimage offset can be read using `path/to/app.AppImage --appimage-offset`
 squishy appimage path/to/app.AppImage --offset 128128 --icon --desktop --appstream --write
+
+# The default output file has same name as the provided file.
+# Use --original-name to save as the same file name found inside SquashFS
+squishy appimage path/to/app.AppImage --icon --write --original-name
 ```
 
 ### Command Options

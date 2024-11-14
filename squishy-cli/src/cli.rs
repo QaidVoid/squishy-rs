@@ -52,5 +52,9 @@ pub enum Commands {
         /// Whether to write files to disk
         #[arg(required = false, long, short)]
         write: Option<Option<PathBuf>>,
+
+        /// Whether to extract the file with the original name from the squashfs inside the AppImage
+        #[arg(required = false, long = "original-name")]
+        original_name: bool,
     },
 }

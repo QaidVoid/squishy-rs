@@ -1,4 +1,5 @@
 use std::{
+    ffi::{OsStr, OsString},
     fs::{self, File},
     io::{Read, Seek, SeekFrom},
     path::Path,
@@ -157,17 +158,34 @@ impl<'a> AppImage<'a> {
         appstream
     }
 
-    pub fn write<P: AsRef<Path>>(&self, file: P, output_dir: P) -> Result<()> {
+    pub fn write<P: AsRef<Path>>(
+        &self,
+        file: P,
+        output_dir: P,
+        output_name: Option<&OsStr>,
+    ) -> Result<()> {
         let file = file.as_ref();
-        let file_name = file.file_name().unwrap();
+        let file_name = output_name
+            .map(|output_name| {
+                let name_with_extension = file
+                    .extension()
+                    .map(|ext| {
+                        format!(
+                            "{}.{}",
+                            output_name.to_string_lossy(),
+                            ext.to_string_lossy()
+                        )
+                    })
+                    .unwrap_or_else(|| file.file_name().unwrap().to_string_lossy().to_string());
+
+                OsString::from(name_with_extension)
+            })
+            .unwrap_or_else(|| file.file_name().unwrap().to_os_string());
+
+        fs::create_dir_all(&output_dir)?;
         let output_path = output_dir.as_ref().join(file_name);
-        fs::create_dir_all(output_path.parent().unwrap())?;
         self.squashfs.write_file(file, &output_path)?;
-        println!(
-            "Wrote {} to {}",
-            file_name.to_string_lossy(),
-            output_path.to_string_lossy()
-        );
+        println!("Wrote {} to {}", file.display(), output_path.display());
         Ok(())
     }
 }

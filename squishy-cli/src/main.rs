@@ -17,6 +17,7 @@ fn main() {
             desktop,
             appstream,
             write,
+            original_name,
         } => {
             if file.exists() {
                 let appimage = match AppImage::new(filter.as_deref(), &file, offset) {
@@ -37,10 +38,17 @@ fn main() {
                     None
                 };
 
+                let output_name = original_name
+                    .then_some(None)
+                    .or(Some(file.file_name()))
+                    .unwrap();
+
                 if desktop {
                     if let Some(desktop) = appimage.find_desktop() {
                         if let Some(ref write_path) = write_path {
-                            appimage.write(&desktop.path, write_path).unwrap();
+                            appimage
+                                .write(&desktop.path, write_path, output_name)
+                                .unwrap();
                         } else {
                             println!("Desktop file: {}", desktop.path.display());
                         }
@@ -51,7 +59,7 @@ fn main() {
                 if icon {
                     if let Some(icon) = appimage.find_icon() {
                         if let Some(ref write_path) = write_path {
-                            appimage.write(&icon.path, write_path).unwrap();
+                            appimage.write(&icon.path, write_path, output_name).unwrap();
                         } else {
                             println!("Icon: {}", icon.path.display());
                         }
@@ -62,7 +70,7 @@ fn main() {
                 if appstream {
                     if let Some(icon) = appimage.find_appstream() {
                         if let Some(ref write_path) = write_path {
-                            appimage.write(&icon.path, write_path).unwrap();
+                            appimage.write(&icon.path, write_path, output_name).unwrap();
                         } else {
                             println!("Appstream file: {}", icon.path.display());
                         }
