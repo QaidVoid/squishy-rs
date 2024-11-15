@@ -1,9 +1,13 @@
-use std::{fs, os::unix};
+use std::{
+    fs::{self, Permissions},
+    os::unix::{self, fs::PermissionsExt},
+};
 
 use appimage::AppImage;
 use clap::Parser;
 use cli::Args;
 use common::get_offset;
+use rayon::iter::ParallelIterator;
 use squishy::{error::SquishyError, EntryKind, SquashFS};
 
 mod appimage;
@@ -132,40 +136,55 @@ fn main() {
                 })
                 .unwrap();
 
-            squashfs.entries().for_each(|entry| {
+            squashfs.par_entries().for_each(|entry| {
                 if let Some(output_dir) = &write_path {
                     let file_path = entry.path.strip_prefix("/").unwrap_or(&entry.path);
+                    let output_path = output_dir.join(file_path);
+                    fs::create_dir_all(output_path.parent().unwrap()).unwrap();
+
                     match entry.kind {
                         EntryKind::File(basic_file) => {
-                            let output_path = output_dir.join(file_path);
-                            squashfs
-                                .write_file_with_permissions(basic_file, &output_path, entry.header)
-                                .unwrap();
+                            if output_path.exists() {
+                                return;
+                            }
+                            let _ = squashfs.write_file_with_permissions(
+                                basic_file,
+                                &output_path,
+                                entry.header,
+                            );
                             log!(
                                 args.quiet,
                                 "Wrote {} to {}",
-                                file.display(),
+                                entry.path.display(),
                                 output_path.display()
                             );
                         }
                         EntryKind::Directory => {
-                            let output_path = output_dir.join(file_path);
+                            if output_path.exists() {
+                                return;
+                            }
                             fs::create_dir_all(&output_path).unwrap();
+                            fs::set_permissions(
+                                &output_path,
+                                Permissions::from_mode(u32::from(entry.header.permissions)),
+                            ).unwrap();
                             log!(
                                 args.quiet,
                                 "Wrote {} to {}",
-                                file.display(),
+                                entry.path.display(),
                                 output_path.display()
                             );
                         }
                         EntryKind::Symlink(e) => {
+                            if output_path.exists() {
+                                return;
+                            }
                             let original_path = e.strip_prefix("/").unwrap_or(&e);
-                            let output_path = output_dir.join(file_path);
-                            unix::fs::symlink(original_path, &output_path).unwrap();
+                            let _ = unix::fs::symlink(original_path, &output_path);
                             log!(
                                 args.quiet,
                                 "Wrote {} to {}",
-                                file.display(),
+                                entry.path.display(),
                                 output_path.display()
                             );
                         }

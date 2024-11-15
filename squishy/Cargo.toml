@@ -12,6 +12,11 @@ keywords.workspace = true
 name = "squishy"
 path = "src/lib.rs"
 
+[features]
+default = []
+rayon = ["dep:rayon"]
+
 [dependencies]
 backhand = "0.18.0"
+rayon = { version = "1.10.0", optional = true }
 thiserror = "2.0.0"

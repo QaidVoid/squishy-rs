@@ -9,6 +9,9 @@ use std::{
 use backhand::{kind::Kind, BasicFile, FilesystemReader, InnerNode, NodeHeader};
 use error::SquishyError;
 
+#[cfg(feature = "rayon")]
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
 pub mod error;
 
 pub type Result<T> = std::result::Result<T, SquishyError>;
@@ -133,6 +136,37 @@ impl<'a> SquashFS<'a> {
                 kind,
             }
         })
+    }
+
+    #[cfg(feature = "rayon")]
+    /// Returns a parallel iterator over all the entries in the SquashFS filesystem.
+    pub fn par_entries(&self) -> impl ParallelIterator<Item = SquashFSEntry> + '_ {
+        self.reader
+            .files()
+            .map(|node| {
+                let size = match &node.inner {
+                    InnerNode::File(file) => file.basic.file_size,
+                    _ => 0,
+                };
+
+                let kind = match &node.inner {
+                    InnerNode::File(file) => EntryKind::File(&file.basic),
+                    InnerNode::Dir(_) => EntryKind::Directory,
+                    InnerNode::Symlink(symlink) => EntryKind::Symlink(
+                        PathBuf::from(format!("/{}", symlink.link.display())).clone(),
+                    ),
+                    _ => EntryKind::Unknown,
+                };
+
+                SquashFSEntry {
+                    header: node.header,
+                    path: node.fullpath.clone(),
+                    size,
+                    kind,
+                }
+            })
+            .collect::<Vec<SquashFSEntry>>()
+            .into_par_iter()
     }
 
     /// Returns an iterator over all the entries in the SquashFS filesystem

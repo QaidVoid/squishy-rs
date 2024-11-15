@@ -1,5 +1,10 @@
-use std::{ffi::{OsStr, OsString}, fs, path::Path};
+use std::{
+    ffi::{OsStr, OsString},
+    fs,
+    path::Path,
+};
 
+use rayon::iter::ParallelIterator;
 use squishy::{error::SquishyError, EntryKind, SquashFS, SquashFSEntry};
 
 use crate::common::get_offset;
@@ -44,8 +49,8 @@ impl<'a> AppImage<'a> {
 
     fn search_diricon(&self) -> Option<SquashFSEntry> {
         self.squashfs
-            .entries()
-            .find(|entry| entry.path.to_string_lossy() == "/.DirIcon")
+            .par_entries()
+            .find_first(|entry| entry.path.to_string_lossy() == "/.DirIcon")
     }
 
     fn filter_path(&self, path: &str) -> bool {
@@ -55,7 +60,7 @@ impl<'a> AppImage<'a> {
     }
 
     fn find_largest_icon_path(&self) -> Option<SquashFSEntry> {
-        let png_entries = self.squashfs.entries().filter(|entry| {
+        let png_entries = self.squashfs.par_entries().filter(|entry| {
             let path = entry.path.to_string_lossy().to_lowercase();
             path.starts_with("/usr/share/icons/")
                 && self.filter_path(&path)
@@ -66,7 +71,7 @@ impl<'a> AppImage<'a> {
             return Some(entry);
         }
 
-        self.squashfs.entries().find(|entry| {
+        self.squashfs.par_entries().find_first(|entry| {
             let path = entry.path.to_string_lossy().to_lowercase();
             path.starts_with("/usr/share/icons")
                 && self.filter_path(&path)
@@ -75,7 +80,7 @@ impl<'a> AppImage<'a> {
     }
 
     fn find_png_icon(&self) -> Option<SquashFSEntry> {
-        let png_entries = self.squashfs.entries().filter(|entry| {
+        let png_entries = self.squashfs.par_entries().filter(|entry| {
             let p = entry.path.to_string_lossy().to_lowercase();
             self.filter_path(&p) && p.ends_with(".png")
         });
@@ -86,14 +91,14 @@ impl<'a> AppImage<'a> {
     }
 
     fn find_svg_icon(&self) -> Option<SquashFSEntry> {
-        self.squashfs.entries().find(|entry| {
+        self.squashfs.par_entries().find_first(|entry| {
             let path = entry.path.to_string_lossy().to_lowercase();
             self.filter_path(&path) && path.ends_with(".svg")
         })
     }
 
     pub fn find_desktop(&self) -> Option<SquashFSEntry> {
-        let desktop = self.squashfs.entries().find(|entry| {
+        let desktop = self.squashfs.par_entries().find_first(|entry| {
             let path = entry.path.to_string_lossy().to_lowercase();
             self.filter_path(&path) && path.ends_with(".desktop")
         });
@@ -108,7 +113,7 @@ impl<'a> AppImage<'a> {
     }
 
     pub fn find_appstream(&self) -> Option<SquashFSEntry> {
-        let appstream = self.squashfs.entries().find(|entry| {
+        let appstream = self.squashfs.par_entries().find_first(|entry| {
             let path = entry.path.to_string_lossy().to_lowercase();
             self.filter_path(&path)
                 && (path.ends_with("appdata.xml") || path.ends_with("metadata.xml"))
