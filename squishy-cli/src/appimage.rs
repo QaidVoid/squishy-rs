@@ -1,49 +1,14 @@
-use std::{
-    ffi::{OsStr, OsString},
-    fs::{self, File},
-    io::{Read, Seek, SeekFrom},
-    path::Path,
-};
+use std::{ffi::{OsStr, OsString}, fs, path::Path};
 
-use goblin::elf::Elf;
 use squishy::{error::SquishyError, EntryKind, SquashFS, SquashFSEntry};
+
+use crate::common::get_offset;
 
 pub type Result<T> = std::result::Result<T, SquishyError>;
 
 pub struct AppImage<'a> {
     filter: Option<&'a str>,
     squashfs: SquashFS<'a>,
-}
-
-fn get_offset<P: AsRef<Path>>(path: P) -> std::io::Result<u64> {
-    let mut file = File::open(path)?;
-
-    let mut elf_header_raw = [0; 64];
-    file.read_exact(&mut elf_header_raw)?;
-
-    let section_table_offset = u64::from_le_bytes(elf_header_raw[40..48].try_into().unwrap()); // e_shoff
-    let section_count = u16::from_le_bytes(elf_header_raw[60..62].try_into().unwrap()); // e_shnum
-
-    let section_table_size = section_count as u64 * 64;
-    let required_bytes = section_table_offset + section_table_size;
-
-    let mut header_data = vec![0; required_bytes as usize];
-    file.seek(SeekFrom::Start(0))?;
-    file.read_exact(&mut header_data)?;
-
-    let elf = Elf::parse(&header_data)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-
-    let section_table_end =
-        elf.header.e_shoff + (elf.header.e_shentsize as u64 * elf.header.e_shnum as u64);
-
-    let last_section_end = elf
-        .section_headers
-        .last()
-        .map(|section| section.sh_offset + section.sh_size)
-        .unwrap_or(0);
-
-    Ok(section_table_end.max(last_section_end))
 }
 
 impl<'a> AppImage<'a> {
@@ -160,32 +125,58 @@ impl<'a> AppImage<'a> {
 
     pub fn write<P: AsRef<Path>>(
         &self,
-        file: P,
+        entry: &SquashFSEntry,
         output_dir: P,
         output_name: Option<&OsStr>,
+        copy_permissions: bool,
     ) -> Result<()> {
-        let file = file.as_ref();
-        let file_name = output_name
-            .map(|output_name| {
-                let name_with_extension = file
-                    .extension()
-                    .map(|ext| {
-                        format!(
-                            "{}.{}",
-                            output_name.to_string_lossy(),
-                            ext.to_string_lossy()
-                        )
-                    })
-                    .unwrap_or_else(|| file.file_name().unwrap().to_string_lossy().to_string());
+        if let EntryKind::File(basic_file) = entry.kind {
+            let file = &entry.path;
+            let file_name = output_name
+                .map(|output_name| {
+                    let name_with_extension = file
+                        .extension()
+                        .map(|ext| {
+                            let file_str = file.file_name().unwrap().to_string_lossy();
+                            if file_str.ends_with("appdata.xml") || file.ends_with("appdata.xml") {
+                                let base_name = if file_str.ends_with("appdata.xml") {
+                                    "appdata"
+                                } else {
+                                    "metadata"
+                                };
+                                format!(
+                                    "{}.{}.{}",
+                                    output_name.to_string_lossy(),
+                                    base_name,
+                                    ext.to_string_lossy()
+                                )
+                            } else {
+                                format!(
+                                    "{}.{}",
+                                    output_name.to_string_lossy(),
+                                    ext.to_string_lossy()
+                                )
+                            }
+                        })
+                        .unwrap_or_else(|| file.file_name().unwrap().to_string_lossy().to_string());
 
-                OsString::from(name_with_extension)
-            })
-            .unwrap_or_else(|| file.file_name().unwrap().to_os_string());
+                    OsString::from(name_with_extension)
+                })
+                .unwrap_or_else(|| file.file_name().unwrap().to_os_string());
 
-        fs::create_dir_all(&output_dir)?;
-        let output_path = output_dir.as_ref().join(file_name);
-        self.squashfs.write_file(file, &output_path)?;
-        println!("Wrote {} to {}", file.display(), output_path.display());
+            fs::create_dir_all(&output_dir)?;
+            let output_path = output_dir.as_ref().join(file_name);
+            if copy_permissions {
+                self.squashfs.write_file_with_permissions(
+                    basic_file,
+                    &output_path,
+                    entry.header,
+                )?;
+            } else {
+                self.squashfs.write_file(basic_file, &output_path)?;
+            }
+            println!("Wrote {} to {}", file.display(), output_path.display());
+        }
         Ok(())
     }
 }
