@@ -1,11 +1,12 @@
 use std::{
     collections::HashSet,
-    fs::File,
-    io::{BufReader, BufWriter, Read, Seek, Write},
+    fs::{self, File, Permissions},
+    io::{BufReader, BufWriter, Read, Seek},
+    os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
 };
 
-use backhand::{kind::Kind, FilesystemReader, InnerNode};
+use backhand::{kind::Kind, BasicFile, FilesystemReader, InnerNode, NodeHeader};
 use error::SquishyError;
 
 pub mod error;
@@ -21,16 +22,17 @@ pub struct SquashFS<'a> {
 /// The SquashFSEntry struct represents a single file or directory entry within the SquashFS filesystem.
 /// It contains information about the path, size, and type of the entry.
 #[derive(Debug)]
-pub struct SquashFSEntry {
+pub struct SquashFSEntry<'a> {
+    pub header: NodeHeader,
     pub path: PathBuf,
     pub size: u32,
-    pub kind: EntryKind,
+    pub kind: EntryKind<'a>,
 }
 
 /// The EntryKind enum represents the different types of entries that can be found in the SquashFS filesystem.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EntryKind {
-    File,
+pub enum EntryKind<'a> {
+    File(&'a BasicFile),
     Directory,
     Symlink(PathBuf),
     Unknown,
@@ -116,7 +118,7 @@ impl<'a> SquashFS<'a> {
             };
 
             let kind = match &node.inner {
-                InnerNode::File(_) => EntryKind::File,
+                InnerNode::File(file) => EntryKind::File(&file.basic),
                 InnerNode::Dir(_) => EntryKind::Directory,
                 InnerNode::Symlink(symlink) => EntryKind::Symlink(
                     PathBuf::from(format!("/{}", symlink.link.display())).clone(),
@@ -125,6 +127,7 @@ impl<'a> SquashFS<'a> {
             };
 
             SquashFSEntry {
+                header: node.header,
                 path: node.fullpath.clone(),
                 size,
                 kind,
@@ -176,16 +179,43 @@ impl<'a> SquashFS<'a> {
     /// to the specified destination path.
     ///
     /// # Arguments
-    /// * `source` - The path to the file within the SquashFS filesystem.
+    /// * `file` - The basic file within the SquashFS filesystem.
     /// * `dest` - The destination path to write the file to.
     ///
     /// # Returns
     /// An empty result, or an error if the file cannot be read or written.
-    pub fn write_file<P: AsRef<Path>>(&self, source: P, dest: P) -> Result<()> {
-        let contents = self.read_file(source)?;
+    pub fn write_file<P: AsRef<Path>>(&self, file: &BasicFile, dest: P) -> Result<()> {
         let output_file = File::create(dest)?;
-        let mut writer = BufWriter::new(output_file);
-        writer.write_all(&contents)?;
+        let mut writer = BufWriter::with_capacity(file.file_size as usize, &output_file);
+        let file = self.reader.file(file);
+        let mut reader = file.reader();
+        std::io::copy(&mut reader, &mut writer)?;
+        Ok(())
+    }
+
+    /// Writes the contents of the specified file from the SquashFS filesystem
+    /// to the specified destination path with permissions.
+    ///
+    /// # Arguments
+    /// * `file` - The basic file within the SquashFS filesystem.
+    /// * `dest` - The destination path to write the file to.
+    /// * `header` - Node header containing file information.
+    ///
+    /// # Returns
+    /// An empty result, or an error if the file cannot be read or written.
+    pub fn write_file_with_permissions<P: AsRef<Path>>(
+        &self,
+        file: &BasicFile,
+        dest: P,
+        header: NodeHeader,
+    ) -> Result<()> {
+        let output_file = File::create(&dest)?;
+        let mode = u32::from(header.permissions);
+        fs::set_permissions(dest, Permissions::from_mode(mode))?;
+        let mut writer = BufWriter::with_capacity(file.file_size as usize, &output_file);
+        let file = self.reader.file(file);
+        let mut reader = file.reader();
+        std::io::copy(&mut reader, &mut writer)?;
         Ok(())
     }
 
