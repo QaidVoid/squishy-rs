@@ -17,13 +17,13 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-squishy = "0.1.0"
+squishy = "0.2.1"
 ```
 
 ### Example
 
 ```rust
-use squishy::SquashFS;
+use squishy::{SquashFS, EntryKind};
 use std::path::Path;
 
 // Open a SquashFS file
@@ -34,11 +34,22 @@ for entry in squashfs.entries() {
     println!("{}", entry.path.display());
 }
 
-// Read a specific file
-let contents = squashfs.read_file("path/to/file.txt")?;
+// Optionally, parallel read with rayon
+use rayon::iter::ParallelIterator;
+for entry in squashfs.par_entries() {
+    println!("{}", entry.path.display());
+}
 
-// Extract a file
-squashfs.write_file("source/path.txt", "destination/path.txt")?;
+// Write file entries to disk
+for entry in squashfs.entries() {
+    if let EntryKind::File(file) = entry.kind {
+        squashfs.write_file(file, "/path/to/output/file")?;
+    }
+}
+
+// Read a specific file
+// Note: the whole file content will be loaded into memory
+let contents = squashfs.read_file("path/to/file.txt")?;
 ```
 
 ## License

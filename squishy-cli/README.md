@@ -60,6 +60,9 @@ squishy appimage path/to/app.AppImage --offset 128128 --icon --desktop --appstre
 # The default output file has same name as the provided file.
 # Use --original-name to save as the same file name found inside SquashFS
 squishy appimage path/to/app.AppImage --icon --write --original-name
+
+# Extract contents of squashfs to a specific directory
+squishy unsquashfs path/to/app.AppImage -w /output/path
 ```
 
 ### Command Options

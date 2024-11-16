@@ -42,13 +42,13 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-squishy = "0.1.0"
+squishy = "0.2.1"
 ```
 
 ### Example
 
 ```rust
-use squishy::SquashFS;
+use squishy::{SquashFS, EntryKind};
 use std::path::Path;
 
 // Open a SquashFS file
@@ -59,11 +59,22 @@ for entry in squashfs.entries() {
     println!("{}", entry.path.display());
 }
 
-// Read a specific file
-let contents = squashfs.read_file("path/to/file.txt")?;
+// Optionally, parallel read with rayon
+use rayon::iter::ParallelIterator;
+for entry in squashfs.par_entries() {
+    println!("{}", entry.path.display());
+}
 
-// Extract a file
-squashfs.write_file("source/path.txt", "destination/path.txt")?;
+// Write file entries to disk
+for entry in squashfs.entries() {
+    if let EntryKind::File(file) = entry.kind {
+        squashfs.write_file(file, "/path/to/output/file")?;
+    }
+}
+
+// Read a specific file
+// Note: the whole file content will be loaded into memory
+let contents = squashfs.read_file("path/to/file.txt")?;
 ```
 
 ## CLI Usage
@@ -94,6 +105,9 @@ squishy appimage path/to/app.AppImage --filter "squishy" --icon --desktop --apps
 # Provide custom offset (it'd be calculated automatically if not provided)
 # Appimage offset can be read using `path/to/app.AppImage --appimage-offset`
 squishy appimage path/to/app.AppImage --offset 128128 --icon --desktop --appstream --write
+
+# Extract contents of squashfs to a specific directory
+squishy unsquashfs path/to/app.AppImage -w /output/path
 ```
 
 ### Command Options
