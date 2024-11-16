@@ -116,7 +116,7 @@ impl<'a> AppImage<'a> {
         let appstream = self.squashfs.par_entries().find_first(|entry| {
             let path = entry.path.to_string_lossy().to_lowercase();
             self.filter_path(&path)
-                && (path.ends_with("appdata.xml") || path.ends_with("metadata.xml"))
+                && (path.ends_with("appdata.xml") || path.ends_with("metainfo.xml"))
         });
 
         if let Some(appstream) = &appstream {
@@ -143,11 +143,11 @@ impl<'a> AppImage<'a> {
                         .extension()
                         .map(|ext| {
                             let file_str = file.file_name().unwrap().to_string_lossy();
-                            if file_str.ends_with("appdata.xml") || file.ends_with("appdata.xml") {
+                            if file_str.ends_with("appdata.xml") || file_str.ends_with("metainfo.xml") {
                                 let base_name = if file_str.ends_with("appdata.xml") {
                                     "appdata"
                                 } else {
-                                    "metadata"
+                                    "metainfo"
                                 };
                                 format!(
                                     "{}.{}.{}",
