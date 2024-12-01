@@ -1,4 +1,8 @@
-use std::{ffi::{OsStr, OsString}, fs, path::Path};
+use std::{
+    ffi::{OsStr, OsString},
+    fs,
+    path::Path,
+};
 
 use squishy::{error::SquishyError, EntryKind, SquashFS, SquashFSEntry};
 
@@ -48,11 +52,7 @@ pub fn extract_file<P: AsRef<Path>>(
         fs::create_dir_all(&output_dir)?;
         let output_path = output_dir.as_ref().join(file_name);
         if copy_permissions {
-            squashfs.write_file_with_permissions(
-                basic_file,
-                &output_path,
-                entry.header,
-            )?;
+            squashfs.write_file_with_permissions(basic_file, &output_path, entry.header)?;
         } else {
             squashfs.write_file(basic_file, &output_path)?;
         }

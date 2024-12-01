@@ -1,7 +1,11 @@
-use std::{fs::File, io::{Read, Seek, SeekFrom}, path::Path};
+use std::{
+    fs::File,
+    io::{Read, Seek, SeekFrom},
+    path::Path,
+};
 
-use rayon::iter::ParallelIterator;
 use goblin::elf::Elf;
+use rayon::iter::ParallelIterator;
 
 use crate::{error::SquishyError, EntryKind, SquashFS, SquashFSEntry};
 

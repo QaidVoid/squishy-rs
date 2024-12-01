@@ -73,8 +73,14 @@ fn main() {
                 if desktop {
                     if let Some(desktop) = appimage.find_desktop() {
                         if let Some(ref write_path) = write_path {
-                                extract_file(&appimage.squashfs, &desktop, write_path, output_name, copy_permissions)
-                                .unwrap();
+                            extract_file(
+                                &appimage.squashfs,
+                                &desktop,
+                                write_path,
+                                output_name,
+                                copy_permissions,
+                            )
+                            .unwrap();
                         } else {
                             log!(args.quiet, "Desktop file: {}", desktop.path.display());
                         }
@@ -85,8 +91,14 @@ fn main() {
                 if icon {
                     if let Some(icon) = appimage.find_icon() {
                         if let Some(ref write_path) = write_path {
-                                extract_file(&appimage.squashfs, &icon, write_path, output_name, copy_permissions)
-                                .unwrap();
+                            extract_file(
+                                &appimage.squashfs,
+                                &icon,
+                                write_path,
+                                output_name,
+                                copy_permissions,
+                            )
+                            .unwrap();
                         } else {
                             log!(args.quiet, "Icon: {}", icon.path.display());
                         }
@@ -97,8 +109,14 @@ fn main() {
                 if appstream {
                     if let Some(appstream) = appimage.find_appstream() {
                         if let Some(ref write_path) = write_path {
-                                extract_file(&appimage.squashfs, &appstream, write_path, output_name, copy_permissions)
-                                .unwrap();
+                            extract_file(
+                                &appimage.squashfs,
+                                &appstream,
+                                write_path,
+                                output_name,
+                                copy_permissions,
+                            )
+                            .unwrap();
                         } else {
                             log!(args.quiet, "Appstream file: {}", appstream.path.display());
                         }
@@ -164,7 +182,8 @@ fn main() {
                             fs::set_permissions(
                                 &output_path,
                                 Permissions::from_mode(u32::from(entry.header.permissions)),
-                            ).unwrap();
+                            )
+                            .unwrap();
                             log!(
                                 args.quiet,
                                 "Wrote {} to {}",

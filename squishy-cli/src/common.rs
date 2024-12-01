@@ -1,4 +1,8 @@
-use std::{fs::File, io::{Read, Seek, SeekFrom}, path::Path};
+use std::{
+    fs::File,
+    io::{Read, Seek, SeekFrom},
+    path::Path,
+};
 
 use goblin::elf::Elf;
 
