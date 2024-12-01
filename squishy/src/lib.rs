@@ -12,6 +12,9 @@ use error::SquishyError;
 #[cfg(feature = "rayon")]
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
+#[cfg(feature = "appimage")]
+pub mod appimage;
+
 pub mod error;
 
 pub type Result<T> = std::result::Result<T, SquishyError>;

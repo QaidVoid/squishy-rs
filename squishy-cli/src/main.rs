@@ -3,12 +3,12 @@ use std::{
     os::unix::{self, fs::PermissionsExt},
 };
 
-use appimage::AppImage;
+use appimage::extract_file;
 use clap::Parser;
 use cli::Args;
 use common::get_offset;
 use rayon::iter::ParallelIterator;
-use squishy::{error::SquishyError, EntryKind, SquashFS};
+use squishy::{appimage::AppImage, error::SquishyError, EntryKind, SquashFS};
 
 mod appimage;
 mod cli;
@@ -73,8 +73,7 @@ fn main() {
                 if desktop {
                     if let Some(desktop) = appimage.find_desktop() {
                         if let Some(ref write_path) = write_path {
-                            appimage
-                                .write(&desktop, write_path, output_name, copy_permissions)
+                                extract_file(&appimage.squashfs, &desktop, write_path, output_name, copy_permissions)
                                 .unwrap();
                         } else {
                             log!(args.quiet, "Desktop file: {}", desktop.path.display());
@@ -86,8 +85,7 @@ fn main() {
                 if icon {
                     if let Some(icon) = appimage.find_icon() {
                         if let Some(ref write_path) = write_path {
-                            appimage
-                                .write(&icon, write_path, output_name, copy_permissions)
+                                extract_file(&appimage.squashfs, &icon, write_path, output_name, copy_permissions)
                                 .unwrap();
                         } else {
                             log!(args.quiet, "Icon: {}", icon.path.display());
@@ -99,8 +97,7 @@ fn main() {
                 if appstream {
                     if let Some(appstream) = appimage.find_appstream() {
                         if let Some(ref write_path) = write_path {
-                            appimage
-                                .write(&appstream, write_path, output_name, copy_permissions)
+                                extract_file(&appimage.squashfs, &appstream, write_path, output_name, copy_permissions)
                                 .unwrap();
                         } else {
                             log!(args.quiet, "Appstream file: {}", appstream.path.display());

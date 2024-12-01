@@ -497,6 +497,7 @@ name = "squishy"
 version = "0.2.1"
 dependencies = [
  "backhand",
+ "goblin",
  "rayon",
  "thiserror 2.0.0",
 ]
