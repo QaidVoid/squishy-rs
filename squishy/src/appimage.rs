@@ -49,6 +49,24 @@ pub fn get_offset<P: AsRef<Path>>(path: P) -> std::io::Result<u64> {
     Ok(section_table_end.max(last_section_end))
 }
 
+/// Check if the provided AppImage is static
+///
+/// # Arguments
+/// * `path` - Path to the appimage file.
+///
+/// # Returns
+/// Boolean indicating whether the appimage is static or not
+pub fn is_static_appimage<P: AsRef<Path>>(path: P) -> std::io::Result<bool> {
+    let mut file = File::open(path)?;
+    let mut buffer = [0_u8; 4];
+    file.seek(SeekFrom::Start(24))?;
+    if file.read_exact(&mut buffer).is_ok() {
+        let expected_bytes: [u8; 4] = [89, 171, 65, 0];
+        return Ok(buffer[..] == expected_bytes);
+    }
+    Ok(false)
+}
+
 pub struct AppImage<'a> {
     filter: Option<&'a str>,
     pub squashfs: SquashFS<'a>,
