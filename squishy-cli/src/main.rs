@@ -6,15 +6,13 @@ use std::{
 use appimage::extract_file;
 use clap::Parser;
 use cli::Args;
+use common::get_offset;
 use rayon::iter::ParallelIterator;
-use squishy::{
-    appimage::{get_offset, AppImage},
-    error::SquishyError,
-    EntryKind, SquashFS,
-};
+use squishy::{appimage::AppImage, error::SquishyError, EntryKind, SquashFS};
 
 mod appimage;
 mod cli;
+mod common;
 
 macro_rules! log {
     ($quiet:expr, $($arg:tt)*) => {

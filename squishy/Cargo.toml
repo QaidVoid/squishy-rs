@@ -14,7 +14,7 @@ path = "src/lib.rs"
 
 [features]
 default = []
-appimage = ["goblin", "rayon"]
+appimage = ["dep:goblin", "dep:rayon"]
 rayon = ["dep:rayon"]
 
 [dependencies]
